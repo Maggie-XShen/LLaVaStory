@@ -1,15 +1,14 @@
-# Intelligent Grimm - Open-ended Visual Storytelling via Latent Diffusion Models (CVPR 2024)
+# [StoryGen & StorySalon] Intelligent Grimm - Open-ended Visual Storytelling via Latent Diffusion Models (CVPR 2024)
 
-This repository contains the official PyTorch implementation of StoryGen: https://arxiv.org/abs/2306.00973/
-
-<div align="center">
-   <img src="./teaser.png">
-</div>
-
-## Some Information
+This repository contains a comprehensive pipeline for running the PyTorch implementation of StoryGen: https://arxiv.org/abs/2306.00973/.
+The official implementation:
 [Project Page](https://haoningwu3639.github.io/StoryGen_Webpage/)  $\cdot$ [Paper](https://arxiv.org/abs/2306.00973/) $\cdot$ [Dataset](https://huggingface.co/datasets/haoningwu/StorySalon) $\cdot$ [Checkpoint](https://huggingface.co/haoningwu/StoryGen)
 
-## Requirements
+# Overview
+
+Before running StoryGen inference code on the StorySalon dataset, it is important to understand the structure of the dataset. The dataset consists of 2 parts: Ebooks and videos. Processed Ebook data can be downloaded directly through (https://huggingface.co/datasets/haoningwu/StorySalon) and has 6 subsets ("African", "Bloom", "Book", "Digital", "Literacy", "StoryWeaver"), but the video part of StorySalon dataset is not directly available. Refer to Section II for Video Data preparation and processing.
+
+## I. Install the following requirements
 - Python >= 3.8 (Recommend to use [Anaconda](https://www.anaconda.com/download/#linux) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html))
 - [PyTorch >= 1.12](https://pytorch.org/)
 - xformers == 0.0.13
@@ -25,28 +24,13 @@ conda env create -f environment.yaml
 conda activate storygen
 ```
 
-## Meta Data Preparation
-#### Data from YouTube
-We provide the metadata of our StorySalon dataset in `./data/metadata.json`. It includes the id, name, url, duration and the keyframe list after filtering the videos.
-
-To download these videos, we recommend to use [youtube-dl](https://github.com/yt-dlp/yt-dlp) via:
-```
-youtube-dl --write-auto-sub -o 'file\%(title)s.%(ext)s' -f 135 [url]
-```
-
-The keyframes extracted with the following data processing pipeline (step 1) can be filtered according to the keyframe list provided in the metadata to avoid manual selection.
-
-The corresponding masks, story-level description and visual description can be extracted with the following data processing pipeline or downloaded from [here](https://huggingface.co/datasets/haoningwu/StorySalon).
-
-#### Data from Open-source Libraries
-For the open-source PDF data, you can directly download the frames, corresponding masks, description and narrative from [StorySalon](https://huggingface.co/datasets/haoningwu/StorySalon).
-
-## Data Processing Pipeline
+## II. Video Data Preparation
+### Data Processing Pipeline
 The data processing pipeline includes several necessary steps: 
-- Extract the keyframes and their corresponding subtitles;
-- Detect and remove duplicate frames;
-- Segment text, people, and headshots in images; and remove frames that only contain real people;
-- Inpaint the text, headshots and real hands in the frames according to the segmentation mask;
+- Step 1: Extract the keyframes and their corresponding subtitles;
+- Step 2: Detect and remove duplicate frames;
+- Step 3: Segment text, people, and headshots in images; and remove frames that only contain real people;
+- Step 4:Inpaint the text, headshots and real hands in the frames according to the segmentation mask;
 - (Optional) Use Caption model combined with subtitles to generate a description of each image.
 
 The keyframes and their corresponding subtitles can be extracted via:
@@ -81,12 +65,42 @@ CUDA_VISIBLE_DEVICES=0 python ./data_process/TextBind/main_caption.py
 CUDA_VISIBLE_DEVICES=0 python ./data_process/MiniGPT-v2/main_caption.py
 ```
 
-(Discarded) Previous method: You can also use [ChatCaptioner](https://github.com/Vision-CAIR/ChatCaptioner/tree/main/ChatCaptioner) to obtain the caption of each image via:
+### Step 0: Installing youtube-dl command line tool
+Metadata for the 'video' subset of the StorySalon dataset can be found in `./data/metadata.json`. It includes the id, name, url, duration and the keyframe list after filtering the videos.
+
+The official github repo recommends to use [youtube-dl](https://github.com/yt-dlp/yt-dlp) via:
 ```
-CUDA_VISIBLE_DEVICES=0 python ./data_process/ChatCaptioner/main_caption.py
+youtube-dl --write-auto-sub -o 'file\%(title)s.%(ext)s' -f 135 [url]
+```
+However, if errors occur, try
+```
+sudo pip install --upgrade --force-reinstall "git+https://github.com/ytdl-org/youtube-dl.git"
 ```
 
-For a more detailed introduction to the data processing pipeline, please refer to `./data_process/README.md` and our paper.
+Then download youtube videos according to urls provided in meta data 
+```
+if not os.path.exists('rawVideo'):
+    os.mkdir('rawVideo')
+%cd ./rawVideo
+
+import json
+import os
+
+with open('./Image_inpainted/Video/metadata.json') as f:
+    metadata = json.load(f)
+
+for video_id, video_data in metadata.items():
+    url = video_data['video_url'][0][0]
+    os.makedirs(video_id, exist_ok=True)
+    output_path = os.path.join(video_id, '%(title)s.%(ext)s')
+    !youtube-dl --write-auto-sub -o '{output_path}' -f bestvideo+bestaudio/best {url}
+```
+The keyframes extracted with the following data processing pipeline (step 1) can be filtered according to the keyframe list provided in the metadata to avoid manual selection.
+
+
+#### Data from Open-source Libraries
+For the open-source PDF data, you can directly download the frames, corresponding masks, description and narrative from [StorySalon](https://huggingface.co/datasets/haoningwu/StorySalon).
+
 
 ## Training
 Before training, please download pre-trained StableDiffusion-1.5 from [SDM](https://huggingface.co/runwayml/stable-diffusion-v1-5/tree/main) (including vae, scheduler, tokenizer and unet). Then, all the pre-trained checkpoints should be placed into the corresponding location in the folder `./ckpt/stable-diffusion-v1-5/`
@@ -118,22 +132,8 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch --multi_gpu train_StorySalon_stag
 CUDA_VISIBLE_DEVICES=0 accelerate launch inference.py
 ```
 
-## TODO
-- [x] Model & Training & Inference Code
-- [x] Dataset Processing Pipeline
-- [x] Meta Data
-- [x] Code Update
-- [x] Release Checkpoints
-- [x] Data Update
-
-## License
-The code and checkpoints in this repository are under MIT license.
-The open-source books in the StorySalon dataset come from multiple online open-source libraries (please refer to the Appendix of our paper for more details), and they are all under CC-BY 4.0 license.
-It should be noted that, for the data extracted from the video data, we only provide YouTube URLs and data processing pipelines, if you wish to use them for commercial purposes, we recommend that you obey the relevant regulations of YouTube.
 
 ## Citation
-If you use this code for your research or project, please cite:
-
 	@inproceedings{liu2024intelligent,
       title     = {Intelligent Grimm -- Open-ended Visual Storytelling via Latent Diffusion Models}, 
       author    = {Chang Liu, Haoning Wu, Yujie Zhong, Xiaoyun Zhang, Yanfeng Wang, Weidi Xie},
