@@ -1,3 +1,4 @@
+#Modified -- output named as: Output_StorySalon_Ebooks/categoryName/storyID/storyID_frameID
 import os
 from typing import Optional
 from torchvision import transforms
@@ -30,12 +31,14 @@ def test(
     num_inference_steps: int = 40,
     guidance_scale: float = 7.0,
     image_guidance_scale: float = 3.5,
-    num_sample_per_prompt: int = 10,
+    num_sample_per_prompt: int = 1,
     stage: str = "multi-image-condition", # ["multi-image-condition", "auto-regressive", "no"]
     mixed_precision: Optional[str] = "fp16" ,
+    frame_number: str = ""
 ):
-    time_string = get_time_string()
-    logdir += f"_{time_string}"
+    # time_string = get_time_string()
+    logdir = os.path.join(logdir, f"{frame_number}")  # Append frame number to logdir
+    # story_output_dir = os.path.dirname(logdir)
     
     if not os.path.exists(logdir):
         os.makedirs(logdir)
@@ -117,35 +120,82 @@ def test(
     images = []
     for i, image in enumerate(output):
         images.append(image[0])
-        images[i].save(os.path.join(logdir, f"{sample_seeds[i]}_output.png"))
+        image[i].save(os.path.join(logdir, f"{frame_number}_output.png"))
 
+
+
+
+import os
+
+def iterate_frames(category_dir: str, image_dir: str, output_dir: str):
+    categories = ["African", "Bloom", "Book", "Digital", "Literacy", "StoryWeaver"]
+    prev_p = []  # Initialize an empty list for previous prompts within the same story
+    
+    for category in categories:
+        category_path = os.path.join(category_dir, category)
+        if not os.path.exists(category_path):
+            continue
+        
+        for story_folder in os.listdir(category_path):
+            story_path = os.path.join(category_path, story_folder)
+            if not os.path.isdir(story_path):
+                continue
+
+            story_output_dir = os.path.join(output_dir, category, story_folder)
+            if not os.path.exists(story_output_dir):
+                os.makedirs(story_output_dir)
+            
+            prev_p.clear()  # Clear previous prompts for each new story
+            
+            # Iterate through frames in the story folder
+            for frame_file in sorted(os.listdir(story_path)):
+                if not frame_file.endswith(".txt"):
+                    continue
+                
+                frame_number = frame_file.split("_")[1].split(".")[0]
+
+                if frame_number == "0001": #first frame of every story
+                    current_stage = "no"  
+                    prev_p = [""]
+                else:
+                    current_stage = "auto-regressive"
+
+                with open(os.path.join(story_path, frame_file), 'r') as f:
+                    prompt = f.read().strip()
+                
+                # Prepare ref_image path based on story and frame number
+                ref_image_path = os.path.join(image_dir, category, story_folder, f"{story_folder}_{frame_number}.jpg")
+                
+                # Call test function with current prompt and ref_image
+                test(pretrained_model_path,
+                     story_output_dir,
+                     prompt,
+                     prev_p,
+                     [ref_image_path],
+                     num_inference_steps,
+                     guidance_scale,
+                     image_guidance_scale,
+                     num_sample_per_prompt,
+                     stage,
+                     mixed_precision,
+                     frame_number=f"{story_folder}_{frame_number}")  # Pass frame_number for saving purposes
+                
+                # Append current prompt to prev_p list for next frame in the same story
+                prev_p.append(prompt)
 
 if __name__ == "__main__":
-
-    pretrained_model_path = '/checkpoint_StorySalon/'
-    logdir = "./inference_StorySalon/"
+    pretrained_model_path = '/content/StoryGen/checkpoints/checkpoint_StorySalon'
+    output_dir = "/content/output_StorySalon_Ebooks"
     num_inference_steps = 40
     guidance_scale = 7
     image_guidance_scale = 3.5
-    num_sample_per_prompt = 10
+    num_sample_per_prompt = 1
     mixed_precision = "fp16"
-    stage = 'auto-regressive' # ["multi-image-condition", "auto-regressive", "no"]
+    stage = 'auto-regressive'  # ["multi-image-condition", "auto-regressive", "no"]
     
-    prompt = "The white cat is running after the black-haired man."
-    prev_p = ["The black-haired man", "The white cat."]
-    ref_image = ["./data/boy.jpg", 
-                 ".data/whitecat1.jpg"]
-
-    test(pretrained_model_path, 
-         logdir, 
-         prompt, 
-         prev_p, 
-         ref_image, 
-         num_inference_steps, 
-         guidance_scale, 
-         image_guidance_scale, 
-         num_sample_per_prompt,
-         stage, 
-         mixed_precision)
+    category_dir = "/content/StorySalon/Text/Caption"
+    image_dir = "/content/StorySalon/Image_inpainted"
+    
+    iterate_frames(category_dir, image_dir, output_dir)
 
 # CUDA_VISIBLE_DEVICES=0 accelerate launch inference.py
