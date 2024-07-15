@@ -73,8 +73,8 @@ def detect(model, imgsz, root_path, sub_path, mask_save_path):
 if __name__ == '__main__':
     # python detect.py --conf-thres 0.80 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default='./yolov7.pt', help='model.pt path(s)')
-    parser.add_argument('--root_path', type=str, default='image/', help='source')
+    parser.add_argument('--weights', nargs='+', type=str, default='/content/StoryGen/data_process/yolov7/yolov7.pt', help='model.pt path(s)')
+    parser.add_argument('--root_path', type=str, default='/content/extractedVid', help='source')
     parser.add_argument('--mask_save_path', type=str, default='mask', help='source')
     parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf_thres', type=float, default=0.50, help='object confidence threshold')
@@ -92,7 +92,10 @@ if __name__ == '__main__':
     device = select_device(opt.device)
     half = device.type != 'cpu'  # half precision only supported on CUDA
 
-    model = attempt_load(opt.weights, map_location=device)  # load FP32 model
+    # model = attempt_load(opt.weights, map_location=device)  # load FP32 model
+    path = '/content/StoryGen/data_process/yolov7/yolov7.pt'
+    model = torch.hub.load("WongKinYiu/yolov7","custom",f"{path}",trust_repo=True)
+
     stride = int(model.stride.max())  # model stride
     imgsz = check_img_size(opt.img_size, s=stride)  # check img_size
 
