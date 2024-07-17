@@ -4,6 +4,8 @@ from PIL import Image
 from tqdm import tqdm
 import numpy as np
 import torch
+import sys
+sys.path.append('/content/latent-diffusion')
 from main import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 
@@ -30,13 +32,17 @@ def make_batch(image, mask, device):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--indir", default='../../StorySalon/', type=str)
-    parser.add_argument("--outdir", default='../../StorySalon/image_inpainted', type=str)
+    # parser.add_argument("--indir", default='../../StorySalon/', type=str)
+    parser.add_argument("--indir", default='', type=str)
+    parser.add_argument("--outdir", default='/content/StorySalon/Image_inpainted/Video', type=str)
+    # parser.add_argument("--outdir", default='/content/StorySalon/image_inpainted', type=str)
     parser.add_argument("--steps", type=int, default=25)
     opt = parser.parse_args()
 
-    image_dir = os.path.join(opt.indir, 'image')
-    mask_dir = os.path.join(opt.indir, 'mask')
+    image_dir = '/content/extractedVid'
+    mask_dir = '/content/segmentedVid'
+    # image_dir = os.path.join(opt.indir, 'image')
+    # mask_dir = os.path.join(opt.indir, 'mask')
     folders = sorted(os.listdir(image_dir))
 
     for folder in folders:
@@ -52,7 +58,8 @@ if __name__ == "__main__":
     for video in image_folders: # video: image_folder, /StorySalon/image/00001
         images = sorted(os.listdir(video))
         for image in images:
-            image_list.append(os.path.join(video, image))
+            if image.endswith('.jpg'):  #MODIFY LATER
+                image_list.append(os.path.join(video, image))
 
     for video in mask_folders: # video: mask_folder, /StorySalon/mask/00001
         masks = sorted(os.listdir(video))
@@ -62,9 +69,9 @@ if __name__ == "__main__":
     outpath_list = [x.replace("image", "image_inpainted") for x in image_list]
     print(f"Found {len(mask_list)} inputs.")
 
-    config = OmegaConf.load("models/ldm/inpainting_big/config.yaml")
+    config = OmegaConf.load("/content/latent-diffusion/models/ldm/inpainting_big/config.yaml")
     model = instantiate_from_config(config.model)
-    model.load_state_dict(torch.load("models/ldm/inpainting_big/last.ckpt")["state_dict"], strict=False)
+    model.load_state_dict(torch.load("/content/latent-diffusion/models/ldm/inpainting_big/last.ckpt")["state_dict"], strict=False)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
