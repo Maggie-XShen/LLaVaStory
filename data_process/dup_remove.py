@@ -4,7 +4,7 @@ import torch
 from PIL import Image
 from torchvision import transforms
 
-save_path = '../extractedVid'
+save_path = '../StorySalon/Image_inpainted/Video'
 
 transform = transforms.Compose([
         transforms.Resize(256, interpolation=3),
