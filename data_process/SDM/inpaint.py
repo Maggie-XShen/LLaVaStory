@@ -39,8 +39,8 @@ if __name__ == "__main__":
     parser.add_argument("--steps", type=int, default=25)
     opt = parser.parse_args()
 
-    image_dir = '/content/extractedVid'
-    mask_dir = '/content/segmentedVid'
+    image_dir = '/content/StorySalon/Image_inpainted/Video'
+    mask_dir = '/content/Mask'
     # image_dir = os.path.join(opt.indir, 'image')
     # mask_dir = os.path.join(opt.indir, 'mask')
     folders = sorted(os.listdir(image_dir))
