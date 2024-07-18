@@ -2,13 +2,13 @@ import os
 import re
 import cv2
 import subprocess
-
 from collections import defaultdict
 import json
 
 # Paths
 video_path = '../rawVideo'
-save_path = '../extractedVid' 
+save_image_path = '../StorySalon/Image_inpainted/Video' 
+save_text_path = '../rawText'  # Update the path for text files
 
 # Get the total length of the video
 def get_video_duration(video_fn):
@@ -135,11 +135,11 @@ if __name__ == '__main__':
                 
                 if os.path.splitext(video_name)[1] == '.vtt':
                     print("Subtitle path : {}".format(v_path))            
-                    s_path = os.path.join(save_path, folder_name)
-                    print("Save path : {}".format(s_path))
-                    os.makedirs(s_path, exist_ok=True)       
+                    t_path = os.path.join(save_text_path, folder_name)
+                    print("Save path : {}".format(t_path))
+                    os.makedirs(t_path, exist_ok=True)       
                     
-                    s_path = os.path.join(s_path, f"{folder_name}.txt")
+                    t_path = os.path.join(t_path, f"{folder_name}.txt")
                     
                     # Extract corresponding information from the vtt file
                     with open(v_path) as f:
@@ -149,7 +149,7 @@ if __name__ == '__main__':
                     lines = list(merge_timestamp(lines))
                     
                     # Write the information into a txt file
-                    with open(s_path, 'w') as f:
+                    with open(t_path, 'w') as f:
                         for j, line in enumerate(lines):
                             f.write(line)
                             if j % 2 == 0:
@@ -159,7 +159,7 @@ if __name__ == '__main__':
 
                 elif os.path.splitext(video_name)[1] == '.mp4':
                     print("Video path : {}".format(v_path))            
-                    s_path = os.path.join(save_path, folder_name)
+                    s_path = os.path.join(save_image_path, folder_name)
                     print("Save path : {}".format(s_path))
                     os.makedirs(s_path, exist_ok=True)
                     
