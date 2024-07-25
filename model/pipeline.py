@@ -4,7 +4,10 @@ from typing import Callable, List, Optional, Union
 from collections import defaultdict
 
 import torch
-from diffusers.pipeline_utils import DiffusionPipeline
+try:
+    from diffusers.pipeline_utils import DiffusionPipeline
+except:
+    from diffusers.pipelines.pipeline_utils import DiffusionPipeline
 from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
 from diffusers.schedulers import (DDIMScheduler, DPMSolverMultistepScheduler,
                                   EulerAncestralDiscreteScheduler,
@@ -367,7 +370,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
         timesteps = self.scheduler.timesteps
 
         # 5. Prepare input variables
-        num_channels_latents = self.unet.in_channels
+        num_channels_latents = self.unet.config.in_channels
         
         latents = self.prepare_latents(
             batch_size * num_images_per_prompt,
