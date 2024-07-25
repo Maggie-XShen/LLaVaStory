@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from diffusers.models.cross_attention import CrossAttention
+from diffusers.models.attention import Attention
 from diffusers.utils import BaseOutput
 from diffusers.configuration_utils import ConfigMixin, register_to_config
 from diffusers.models.modeling_utils import ModelMixin
@@ -172,7 +172,7 @@ class BasicTransformerBlock(nn.Module):
 
         # Transformer Decoder plus: self-attn, text-cross-attn, image-cross-attn, feed-forward;
         # 1. Self-Attn
-        self.attn1 = CrossAttention(
+        self.attn1 = Attention(
             query_dim=dim,
             heads=num_attention_heads,
             dim_head=attention_head_dim,
@@ -189,7 +189,7 @@ class BasicTransformerBlock(nn.Module):
         
         # 2. Text-Cross-Attn
         if cross_attention_dim is not None:
-            self.attn2 = CrossAttention(
+            self.attn2 = Attention(
                 query_dim=dim,
                 cross_attention_dim=cross_attention_dim, # 768
                 heads=num_attention_heads,
@@ -212,7 +212,7 @@ class BasicTransformerBlock(nn.Module):
             self.norm2 = None
 
         # 3. Image-Cross_Attn
-        self.attn3 = CrossAttention(
+        self.attn3 = Attention(
             query_dim=dim,
             cross_attention_dim=dim,#4,#dim, # the same as query_dim
             heads=num_attention_heads,
